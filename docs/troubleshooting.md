@@ -22,7 +22,7 @@ config.js 에 오타가 있어서 **배포를 멈춘 거예요. 기존 청첩장
 
 ### Q. 예시 그림(다른 부부 사진)이 나와요
 `images` 폴더에 내 사진을 하나도 안 올리면 예시 그림으로 보여줘요. 내 사진을 올리면 자동으로 바뀌어요.
-그리고 `demo` 폴더는 꼭 지워주세요. (`https://github.com/내아이디/저장소이름/tree/main/demo` → `···` → `Delete directory`)
+필요 없으면 `demo` 폴더는 지워도 돼요. (`https://github.com/내아이디/저장소이름/tree/main/demo` → `···` → `Delete directory`)
 
 ### Q. 사진이 안 나와요
 - 표지는 `images/cover.jpg` 로 올렸는지, 갤러리는 `images/gallery` 폴더 **안에** 올렸는지 확인하세요.

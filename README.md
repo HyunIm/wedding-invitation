@@ -111,7 +111,6 @@ The person is most likely **not a developer**. Follow this guide.
 | [문제 해결](docs/troubleshooting.md) | "화면이 안 바뀌어요" 등 자주 묻는 질문 |
 
 ## 📜 라이선스
-- **코드·문서:** MIT — 자유롭게 쓰고, 고치고, 나눠주세요.
-- **예시 그림 (`demo/` 폴더, `docs/preview.jpg`):** 실제 인물을 그린 것이라 MIT 에 포함되지 않아요. 내 청첩장을 만들 땐 `demo/` 폴더를 지우고 내 사진을 올려주세요. ([LICENSE](LICENSE))
+[MIT](LICENSE) — 코드·문서·예시 그림 모두 자유롭게 쓰고, 고치고, 나눠주세요.
 
 행복한 결혼 되세요! 💐

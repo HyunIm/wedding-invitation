@@ -13,7 +13,7 @@ For the end-to-end flow (interview → GitHub setup → config.js), follow the *
 5. **In chat (no repo access), output the entire `config.js`** in one code block.
 6. **Validate before committing** when you can run commands: `node scripts/build.mjs`.
 7. **Photos go in `images/`** (`cover.jpg`, optional `og.jpg` / `closing.jpg` / `bgm.mp3`, gallery photos in `images/gallery/`). Keep `gallery.images: []` so the build lists the gallery folder automatically. Full-size phone photos are fine (see Build).
-8. **`demo/` holds the template author's sample images** — not MIT-licensed. Users building their own invitation should delete it.
+8. **`demo/` holds the template's sample images**, shown only while `images/` has no photos. Users building their own invitation can delete it.
 
 ## Field formats
 

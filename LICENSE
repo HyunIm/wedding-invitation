@@ -19,19 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
---------------------------------------------------------------------------------
-
-EXCEPTION — SAMPLE IMAGES ARE NOT COVERED BY THE MIT LICENSE
-
-The files in the `demo/` folder and `docs/preview.jpg` are illustrations of
-real people (the template author and their spouse). They are provided only so
-the demo looks complete. They are NOT licensed for reuse, modification or
-redistribution. All rights reserved, (c) 2026 Lim Hyun.
-
-If you create your own invitation from this template, delete the `demo/`
-folder and upload your own photos to `images/`.
-
-예시 이미지 안내: `demo/` 폴더와 `docs/preview.jpg` 의 그림은 실제 인물(템플릿
-제작자 부부)을 그린 것으로, MIT 라이선스에 포함되지 않습니다. 재사용·수정·배포할
-수 없으니 내 청첩장을 만들 때는 `demo/` 폴더를 지우고 본인 사진을 올려주세요.
