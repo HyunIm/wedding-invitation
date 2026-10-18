@@ -1,8 +1,9 @@
 // 배포용 빌드 스크립트 (GitHub Actions 에서 자동 실행됩니다. 직접 실행할 필요 없어요.)
 //  1) config.js 에 오타가 없는지 검사하고
 //  2) 사진 경로를 맞춰주고 (갤러리 자동 목록, 대소문자·확장자 차이 보정)
-//  3) 카카오톡/문자 미리보기(OG 태그)를 config.js 의 meta 값으로 채운 뒤
-//  4) _site 폴더에 배포할 파일만 모읍니다.
+//  3) 카카오톡/문자 미리보기(OG 태그)를 config.js 의 meta 값으로 채우고
+//  4) '내 캘린더에 추가' 용 wedding.ics 파일을 만든 뒤
+//  5) _site 폴더에 배포할 파일만 모읍니다.
 //
 // images 폴더에 사진이 하나도 없으면 템플릿 예시 사진(demo 폴더)으로 보여줍니다.
 //
@@ -12,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, '_site');
@@ -149,7 +151,38 @@ fs.appendFileSync(path.join(OUT, 'config.js'), `
     o[k[k.length - 1]] = p[1];
   });
 })(window.WEDDING, ${JSON.stringify(patches)});
+window.WEDDING_ICS = 'wedding.ics';
 `);
+
+// ── 내 캘린더에 추가용 wedding.ics (아이폰은 이 파일 주소를 열면 바로 '캘린더에 추가' 창이 떠요)
+{
+  const [y, mo, d] = W.date.split('-').map(Number);
+  const [hh, mm] = W.time.split(':').map(Number);
+  const start = new Date(Date.UTC(y, mo - 1, d, hh - 9, mm)); // 한국시간 → UTC
+  const end = new Date(start.getTime() + 2 * 3600e3);
+  const t = (dt) => dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const text = (v) => String(v ?? '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  const fold = (line) => { // 한 줄 75바이트 제한 (RFC 5545)
+    const out = []; let cur = '';
+    for (const ch of line) {
+      if (Buffer.byteLength(cur + ch) > 74) { out.push(cur); cur = ' ' + ch; } else cur += ch;
+    }
+    return [...out, cur].join('\r\n');
+  };
+  const first = (p) => p?.firstName || p?.name || '';
+  const title = `${first(C.groom)} ♥ ${first(C.bride)} 결혼식`;
+  const where = [[W.venue, W.hall].filter(Boolean).join(' '), W.address].filter(Boolean).join(', ');
+  const uid = createHash('sha1').update(`${W.date}${W.time}${title}`).digest('hex').slice(0, 16);
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//wedding-invitation//KO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VEVENT', `UID:${uid}@wedding-invitation`, `DTSTAMP:${t(new Date())}`,
+    `DTSTART:${t(start)}`, `DTEND:${t(end)}`, `SUMMARY:${text(title)}`, `LOCATION:${text(where)}`,
+    ...(SITE_URL ? [`DESCRIPTION:${text(SITE_URL + '/')}`, `URL:${SITE_URL}/`] : []),
+    'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', `DESCRIPTION:${text(`내일은 ${title}입니다`)}`, 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ].map(fold).join('\r\n') + '\r\n';
+  fs.writeFileSync(path.join(OUT, 'wedding.ics'), ics);
+}
 
 // ── 4. 미리보기(OG) 태그 채우기 ─────────────────────────────────────
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');

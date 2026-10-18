@@ -564,20 +564,35 @@
     var end = new Date(start.getTime() + 2 * 3600 * 1000);
     function fmt(d) { return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
     var title = groomFirst + ' ♥ ' + brideFirst + ' 결혼식';
-    var loc = (W.venue || '') + ' ' + (W.hall || '') + ', ' + (W.address || '');
+    var loc = [[W.venue, W.hall].filter(Boolean).join(' '), W.address].filter(Boolean).join(', ');
     var gUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(title) +
-      '&dates=' + fmt(start) + '/' + fmt(end) + '&location=' + encodeURIComponent(loc) + '&details=' + encodeURIComponent(location.href.split('#')[0]);
-    var ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//wedding//KO', 'BEGIN:VEVENT',
-      'UID:' + fmt(start) + '@wedding', 'DTSTAMP:' + fmt(new Date()), 'DTSTART:' + fmt(start), 'DTEND:' + fmt(end),
-      'SUMMARY:' + title, 'LOCATION:' + loc.replace(/,/g, '\\,'), 'DESCRIPTION:' + location.href.split('#')[0],
-      'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', 'DESCRIPTION:내일은 ' + title + '입니다', 'END:VALARM',
-      'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-    var icsUrl = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-    openModal(
-      '<div class="cal-add">' +
-      '<a class="btn btn--outline" href="' + icsUrl + '" download="wedding.ics">' + icon('calendar') + ' 아이폰 · 삼성 캘린더</a>' +
-      '<a class="btn btn--outline" target="_blank" rel="noopener" href="' + gUrl + '">' + icon('calendar') + ' 구글 캘린더</a>' +
-      '<p class="hint">하루 전 알림이 함께 등록돼요.</p></div>',
+      '&dates=' + fmt(start) + '/' + fmt(end) + '&location=' + encodeURIComponent(loc) + '&details=' + encodeURIComponent(pageUrl);
+
+    // 배포본은 build 가 만든 wedding.ics 파일 주소를, 내 컴퓨터 미리보기는 즉석에서 만든 파일을 사용
+    var icsUrl = window.WEDDING_ICS ? absUrl(window.WEDDING_ICS) : 'data:text/calendar;charset=utf-8,' + encodeURIComponent(
+      ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//wedding-invitation//KO', 'BEGIN:VEVENT',
+        'UID:' + fmt(start) + '@wedding-invitation', 'DTSTAMP:' + fmt(new Date()), 'DTSTART:' + fmt(start), 'DTEND:' + fmt(end),
+        'SUMMARY:' + title, 'LOCATION:' + loc.replace(/,/g, '\\,'),
+        'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', 'DESCRIPTION:내일은 ' + title + '입니다', 'END:VALARM',
+        'END:VEVENT', 'END:VCALENDAR'].join('\r\n'));
+
+    var ua = navigator.userAgent;
+    var isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var isAndroid = /Android/i.test(ua);
+    var inKakao = /KAKAOTALK/i.test(ua);
+    // 카카오톡 안 브라우저는 캘린더·다운로드가 막혀 있어서 휴대폰 기본 브라우저로 열어요
+    function out(url) { return inKakao && /^https:/.test(url) ? 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url) : url; }
+    function btn(label, url, attrs) {
+      return '<a class="btn btn--outline" href="' + esc(out(url)) + '" ' + (attrs || '') + '>' + icon('calendar') + ' ' + label + '</a>';
+    }
+    var apple = btn('아이폰 캘린더', icsUrl, window.WEDDING_ICS ? '' : 'download="wedding.ics"');
+    var google = btn('구글 캘린더', gUrl, 'target="_blank" rel="noopener"');
+    var file = btn(isAndroid ? '삼성 캘린더 (파일 받기)' : '캘린더 파일 받기 (.ics)', icsUrl, 'download="wedding.ics"');
+    var buttons = isIOS ? [apple, google] : [google, file];
+    var hints = ['하루 전 알림이 함께 등록돼요.'];
+    if (inKakao) hints.push('카카오톡에서는 휴대폰 기본 브라우저로 열려요.');
+    if (isAndroid) hints.push('삼성 캘린더는 받은 파일을 눌러 추가해 주세요.');
+    openModal('<div class="cal-add">' + buttons.join('') + '<p class="hint">' + hints.join('<br>') + '</p></div>',
       { title: '내 캘린더에 추가', cls: 'modal--sheet' });
   }
 
