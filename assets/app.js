@@ -23,16 +23,15 @@
     return;
   }
 
-  var C = window.WEDDING;
-
-  // index.html 을 바로 열었을 때는 예시 사진(demo/demo.js)으로 미리보기. 배포본은 build 가 경로를 맞춰요.
-  if (window.WEDDING_DEMO) {
-    Object.keys(window.WEDDING_DEMO).forEach(function (key) {
-      var keys = key.split('.'), o = C;
-      for (var i = 0; i < keys.length - 1; i++) o = o[keys[i]] = o[keys[i]] || {};
-      o[keys[keys.length - 1]] = window.WEDDING_DEMO[key];
-    });
+  var problems = window.WeddingConfig.validate(window.WEDDING);
+  if (problems.errors.length) {
+    app.innerHTML = '<div class="config-error"><h1>청첩장 설정을 확인해주세요</h1><ul>' +
+      problems.errors.map(function (message) { return '<li>' + escapeHtml(message) + '</li>'; }).join('') +
+      '</ul><p><a href="setup.html">기본 설정 만들기</a> · <a href="prepare.html">사진 준비하기</a></p></div>';
+    return;
   }
+  var C = window.WeddingConfig.normalize(window.WEDDING);
+
   // 이 청첩장 템플릿의 원본 저장소 (하단 링크)
   var TEMPLATE_URL = 'https://github.com/HyunIm/wedding-invitation';
 
@@ -52,8 +51,8 @@
   function smsHref(p) { return 'sms:' + String(p || '').replace(/[^0-9+]/g, ''); }
   function store(key, val) {
     try {
-      if (val === undefined) return localStorage.getItem('wedding:' + key);
-      localStorage.setItem('wedding:' + key, val);
+      if (val === undefined) return localStorage.getItem('wedding:' + location.pathname.replace(/[^/]*$/, '') + ':' + key);
+      localStorage.setItem('wedding:' + location.pathname.replace(/[^/]*$/, '') + ':' + key, val);
     } catch (e) { return null; }
   }
   var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -125,7 +124,7 @@
   /* ── 공통 조각 ───────────────────────────────────────────────────────── */
   function img(src, alt, cls, extra) {
     if (!src) return '';
-    return '<img class="' + (cls || '') + '" src="' + esc(src) + '" alt="' + esc(alt || '') + '" loading="lazy" decoding="async" onerror="this.classList.add(\'is-missing\')" ' + (extra || '') + '>';
+    return '<img class="' + (cls || '') + '" src="' + esc(src) + '" alt="' + esc(alt || '') + '" ' + (extra && /loading=/.test(extra) ? '' : 'loading="lazy" ') + 'decoding="async" onerror="this.classList.add(\'is-missing\')" ' + (extra || '') + '>';
   }
   // 배포 시 자동으로 만든 갤러리 썸네일 경로 (scripts/optimize_images.py). 없으면 원본 사용.
   function thumbImg(src, alt) {
@@ -133,7 +132,7 @@
     if (!base || /^([a-z]+:)?\/\//i.test(src)) return img(src, alt);
     var thumb = base + src.replace(/^\.?\//, '').replace(/\.[^./]+$/, '.jpg');
     return '<img src="' + esc(thumb) + '" alt="' + esc(alt) + '" loading="lazy" decoding="async" ' +
-      'onerror="if(this.src.indexOf(\'' + esc(base) + '\')>-1){this.src=\'' + esc(src) + '\'}else{this.classList.add(\'is-missing\')}">';
+      'data-fallback="' + esc(src) + '" onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback}else{this.classList.add(\'is-missing\')}">';
   }
   function heading(en, ko) {
     return '<header class="sec-head reveal">' +
@@ -307,16 +306,18 @@
     var map;
     if (l.mapImage) {
       map = '<div class="map reveal">' + img(l.mapImage, '약도') + '</div>';
-    } else if (W.lat && W.lng) {
+    } else if (window.WeddingConfig.hasCoordinates(W)) {
       map = '<div class="map reveal">' +
         '<iframe title="예식장 지도" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=' + W.lat + ',' + W.lng + '&z=16&hl=ko&output=embed"></iframe>' +
         '<button type="button" class="map__lock" data-action="map-unlock">지도를 움직이려면 터치하세요</button></div>';
     } else map = '';
+    var coordinates = window.WeddingConfig.hasCoordinates(W);
+    var kakaoMap = coordinates ? 'https://map.kakao.com/link/to/' + encodeURIComponent(W.venue || '예식장') + ',' + W.lat + ',' + W.lng : 'https://map.kakao.com/link/search/' + encodeURIComponent(W.address || W.venue || '');
     var nav =
       '<div class="navi reveal">' +
       '<a class="navi__btn" target="_blank" rel="noopener" href="https://map.naver.com/p/search/' + encodeURIComponent(W.venue || W.address || '') + '"><img alt="" src="data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#03C75A"/><path d="M7 7h3.3l3.4 5V7H17v10h-3.3l-3.4-5v5H7z" fill="#fff"/></svg>') + '">네이버지도</a>' +
-      '<a class="navi__btn" target="_blank" rel="noopener" href="https://map.kakao.com/link/to/' + encodeURIComponent(W.venue || '예식장') + ',' + W.lat + ',' + W.lng + '"><img alt="" src="data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#FFCD00"/><path d="M12 5.5c-3.6 0-6.5 2.3-6.5 5.1 0 1.8 1.2 3.4 3 4.3l-.6 2.3c-.1.3.2.5.4.3l2.7-1.8c.3 0 .6.1 1 .1 3.6 0 6.5-2.3 6.5-5.2S15.6 5.5 12 5.5z" fill="#3A1D1D"/></svg>') + '">카카오맵</a>' +
-      '<button type="button" class="navi__btn" data-action="tmap"><img alt="" src="data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#EF3E5C"/><path d="M6 7h12v2.8h-4.4V18h-3.2V9.8H6z" fill="#fff"/></svg>') + '">티맵</button>' +
+      '<a class="navi__btn" target="_blank" rel="noopener" href="' + esc(kakaoMap) + '"><img alt="" src="data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#FFCD00"/><path d="M12 5.5c-3.6 0-6.5 2.3-6.5 5.1 0 1.8 1.2 3.4 3 4.3l-.6 2.3c-.1.3.2.5.4.3l2.7-1.8c.3 0 .6.1 1 .1 3.6 0 6.5-2.3 6.5-5.2S15.6 5.5 12 5.5z" fill="#3A1D1D"/></svg>') + '">카카오맵</a>' +
+      (coordinates ? '<button type="button" class="navi__btn" data-action="tmap"><img alt="" src="data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#EF3E5C"/><path d="M6 7h12v2.8h-4.4V18h-3.2V9.8H6z" fill="#fff"/></svg>') + '">티맵</button>' : '') +
       '</div>';
     var transport = (l.transport || []).map(function (t) {
       var ic = { subway: 'subway', bus: 'bus', car: 'car', parking: 'parking', shuttle: 'bus' }[t.type] || 'pin';
@@ -371,7 +372,7 @@
 
   R.account = function () {
     var a = C.account;
-    if (!enabled(a)) return '';
+    if (!enabled(a) || !((a.groom || []).length + (a.bride || []).length)) return '';
     function group(side, label, list) {
       if (!list || !list.length) return '';
       return '<div class="acc" data-side="' + side + '">' +
@@ -500,7 +501,7 @@
       var ta = document.createElement('textarea');
       ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
       document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); toast(msg || '복사되었어요'); } catch (e) { toast('복사에 실패했어요. 길게 눌러 복사해주세요.'); }
+      try { if (!document.execCommand('copy')) throw new Error('COPY_FAILED'); toast(msg || '복사되었어요'); } catch (e) { toast('복사에 실패했어요. 길게 눌러 복사해주세요.'); }
       document.body.removeChild(ta);
     }
     if (navigator.clipboard && window.isSecureContext) {
@@ -510,37 +511,66 @@
 
   /* ── 모달 (뒤로가기 버튼으로 닫힘) ──────────────────────────────────── */
   var modalStack = [];
+  var modalSequence = 0;
+  var backgroundState = [];
   function openModal(inner, opts) {
     opts = opts || {};
     var m = document.createElement('div');
     m.className = 'modal ' + (opts.cls || '');
     m.setAttribute('role', 'dialog');
     m.setAttribute('aria-modal', 'true');
+    m.setAttribute('tabindex', '-1');
+    var titleId = 'dialog-title-' + (++modalSequence);
+    if (opts.title) m.setAttribute('aria-labelledby', titleId);
+    else m.setAttribute('aria-label', opts.label || '사진 크게 보기');
     m.innerHTML = '<div class="modal__dim" data-close></div><div class="modal__panel">' +
-      (opts.title ? '<div class="modal__head"><h2>' + esc(opts.title) + '</h2><button type="button" class="icon-btn" data-close aria-label="닫기">' + icon('close') + '</button></div>' : '') +
+      (opts.title ? '<div class="modal__head"><h2 id="' + titleId + '">' + esc(opts.title) + '</h2><button type="button" class="icon-btn" data-close aria-label="닫기">' + icon('close') + '</button></div>' : '') +
       '<div class="modal__body">' + inner + '</div></div>';
+    var previousFocus = document.activeElement;
+    if (!modalStack.length) {
+      backgroundState = Array.prototype.map.call(document.body.children, function (el) {
+        var state = { el: el, inert: el.inert }; el.inert = true; return state;
+      });
+    } else modalStack[modalStack.length - 1].el.inert = true;
     document.body.appendChild(m);
     document.body.classList.add('is-locked');
     requestAnimationFrame(function () { m.classList.add('is-open'); });
-    var entry = { el: m, onClose: opts.onClose };
+    var entry = { el: m, onClose: opts.onClose, previousFocus: previousFocus };
     modalStack.push(entry);
     try { history.pushState({ modal: modalStack.length }, ''); } catch (e) { /* ignore */ }
     on(m, 'click', function (e) { if (e.target.closest('[data-close]')) closeModal(); });
-    var focusEl = m.querySelector('input, textarea, button');
-    if (focusEl && !isMobile) setTimeout(function () { focusEl.focus(); }, 50);
+    // 모바일에서 키보드를 강제로 열지 않도록 닫기 버튼을 먼저 선택합니다.
+    var focusEl = m.querySelector('button[data-close]') || m;
+    focusEl.focus({ preventScroll: true });
     return m;
   }
   function closeModal(fromPop) {
     var entry = modalStack.pop();
     if (!entry) return;
     entry.el.classList.remove('is-open');
+    entry.el.inert = true;
     setTimeout(function () { entry.el.remove(); }, 250);
-    if (!modalStack.length) document.body.classList.remove('is-locked');
+    if (!modalStack.length) {
+      document.body.classList.remove('is-locked');
+      backgroundState.forEach(function (state) { state.el.inert = state.inert; });
+      backgroundState = [];
+    } else modalStack[modalStack.length - 1].el.inert = false;
+    if (entry.previousFocus && entry.previousFocus.isConnected) entry.previousFocus.focus({ preventScroll: true });
     if (entry.onClose) entry.onClose();
     if (!fromPop) { try { history.back(); } catch (e) { /* ignore */ } }
   }
   on(window, 'popstate', function () { if (modalStack.length) closeModal(true); });
-  on(document, 'keydown', function (e) { if (e.key === 'Escape' && modalStack.length) closeModal(); });
+  on(document, 'keydown', function (e) {
+    if (!modalStack.length) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeModal(); return; }
+    if (e.key !== 'Tab') return;
+    var modal = modalStack[modalStack.length - 1].el;
+    var stops = $$('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex="0"]', modal).filter(function (el) { return el.tabIndex >= 0 && el.getClientRects().length && !el.closest('[hidden]'); });
+    var first = stops[0], last = stops[stops.length - 1];
+    if (!first) { e.preventDefault(); modal.focus(); }
+    else if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+  });
 
   /* ── 연락하기 ───────────────────────────────────────────────────────── */
   function openContact() {
@@ -589,7 +619,7 @@
     var google = btn('구글 캘린더', gUrl, 'target="_blank" rel="noopener"');
     var file = btn(isAndroid ? '삼성 캘린더 (파일 받기)' : '캘린더 파일 받기 (.ics)', icsUrl, 'download="wedding.ics"');
     var buttons = isIOS ? [apple, google] : [google, file];
-    var hints = ['하루 전 알림이 함께 등록돼요.'];
+    var hints = ['캘린더 파일에는 하루 전 알림이 포함돼요. 구글 캘린더는 저장할 때 알림을 확인해주세요.'];
     if (inKakao) hints.push('카카오톡에서는 휴대폰 기본 브라우저로 열려요.');
     if (isAndroid) hints.push('삼성 캘린더는 받은 파일을 눌러 추가해 주세요.');
     openModal('<div class="cal-add">' + buttons.join('') + '<p class="hint">' + hints.join('<br>') + '</p></div>',
@@ -662,6 +692,7 @@
 
   /* ── 지도 앱 ────────────────────────────────────────────────────────── */
   function openTmap() {
+    if (!window.WeddingConfig.hasCoordinates(W)) { toast('장소 검색을 이용해주세요'); return; }
     if (!isMobile) { toast('티맵은 휴대폰에서만 열 수 있어요'); return; }
     var url = 'tmap://route?goalname=' + encodeURIComponent(W.venue || '') + '&goalx=' + W.lng + '&goaly=' + W.lat;
     var start = Date.now();
@@ -754,16 +785,22 @@
   function api(method, payload) {
     var url = C.googleScriptUrl;
     if (!url) return Promise.reject(new Error('NO_URL'));
+    var controller = new AbortController();
+    var timeout = setTimeout(function () { controller.abort(); }, 15000);
     var opts = method === 'GET'
       ? {}
       // text/plain 으로 보내야 구글 스크립트가 추가 확인(CORS) 없이 받습니다.
       : { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) };
-    var full = method === 'GET' ? url + (url.indexOf('?') < 0 ? '?' : '&') + 'type=' + payload.type + '&t=' + Date.now() : url;
-    return fetch(full, opts).then(function (r) { return r.json(); }).then(function (res) {
+    opts.signal = controller.signal;
+    var full = method === 'GET' ? url + (url.indexOf('?') < 0 ? '?' : '&') + 'type=' + payload.type + '&limit=' + gbPage + (payload.before ? '&before=' + payload.before : '') + '&t=' + Date.now() : url;
+    return fetch(full, opts).then(function (r) { if (!r.ok) throw new Error('HTTP_' + r.status); return r.json(); }).then(function (res) {
       if (!res || res.ok === false) throw new Error((res && res.error) || 'FAILED');
       return res;
-    });
+    }).finally(function () { clearTimeout(timeout); });
   }
+  function submissionError(error) { return error.message === 'RATE_LIMIT' ? '너무 자주 보냈어요. 1분 뒤 다시 시도해주세요.' : error.message === 'INVALID_COUNT' ? '참석 인원은 1~20명의 정수로 입력해주세요.' : '전송에 실패했어요. 잠시 후 다시 시도해주세요.'; }
+  function submissionId() { return window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2); }
+  function field(form, name) { return form.elements.namedItem(name); }
   function notReady() { toast('아직 준비 중인 기능이에요 (구글 시트 연결 필요)'); }
 
   /* ── 참석 의사 (RSVP) ──────────────────────────────────────────────── */
@@ -786,48 +823,52 @@
         '<label><input type="radio" name="meal" value="미정"><span>미정</span></label></fieldset>' : '') +
       '<label class="field"><span>전하실 말씀 <small>(선택)</small></span><textarea name="memo" rows="2" maxlength="200" placeholder="예) 아이 1명과 함께 가요"></textarea></label>' +
       '<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
+      '<p class="hint">성함과 응답은 예식 준비를 위해 주최자의 구글 시트에 저장되며 청첩장에 공개되지 않습니다.</p>' +
       '<button type="submit" class="btn btn--primary">전달하기</button>' +
       '</form>',
       { title: r.title || '참석 의사 전달' });
     var form = $('form', m);
+    var requestId = submissionId();
     function syncAttend() {
-      var no = form.attend.value === '불참';
+      var no = field(form, 'attend').value === '불참';
       $$('[data-attend-only]', form).forEach(function (el) { el.hidden = no; });
     }
     on(form, 'change', syncAttend);
     $$('[data-step]', form).forEach(function (b) {
       on(b, 'click', function () {
-        var n = Math.max(1, Math.min(20, (+form.count.value || 1) + (+b.getAttribute('data-step'))));
-        form.count.value = n;
+        var n = Math.max(1, Math.min(20, (+field(form, 'count').value || 1) + (+b.getAttribute('data-step'))));
+        field(form, 'count').value = n;
       });
     });
     on(form, 'submit', function (e) {
       e.preventDefault();
-      if (form.website.value) return; // 스팸 방지
-      if (!form.side.value) { toast('신랑측 / 신부측을 선택해주세요'); return; }
-      if (!form.name.value.trim()) { toast('성함을 입력해주세요'); form.name.focus(); return; }
+      if (field(form, 'website').value) return; // 스팸 방지
+      if (!field(form, 'side').value) { toast('신랑측 / 신부측을 선택해주세요'); return; }
+      if (!field(form, 'name').value.trim()) { toast('성함을 입력해주세요'); field(form, 'name').focus(); return; }
       if (!C.googleScriptUrl) { notReady(); return; }
+      var attend = field(form, 'attend').value;
+      var count = attend === '참석' ? (field(form, 'count') ? Number(field(form, 'count').value) : 1) : 0;
+      if (attend === '참석' && (!Number.isInteger(count) || count < 1 || count > 20)) { toast('참석 인원은 1~20명의 정수로 입력해주세요'); return; }
       var btn = $('button[type=submit]', form);
       btn.disabled = true; btn.textContent = '전달하는 중…';
-      var attend = form.attend.value;
       api('POST', {
-        type: 'rsvp', side: form.side.value, attend: attend, name: form.name.value.trim(),
-        count: attend === '참석' && form.count ? form.count.value : 0,
-        meal: attend === '참석' && form.meal ? form.meal.value : '',
-        memo: form.memo.value.trim(),
+        type: 'rsvp', side: field(form, 'side').value, attend: attend, name: field(form, 'name').value.trim(),
+        count: count, requestId: requestId, website: field(form, 'website').value,
+        meal: attend === '참석' && field(form, 'meal') ? field(form, 'meal').value : '',
+        memo: field(form, 'memo').value.trim(),
       }).then(function () {
         store('rsvpDone', '1');
         closeModal();
         toast(attend === '참석' ? '참석 의사가 전달되었어요. 감사합니다!' : '따뜻한 마음 감사합니다.');
-      }).catch(function () {
+      }).catch(function (error) {
         btn.disabled = false; btn.textContent = '전달하기';
-        toast('전송에 실패했어요. 잠시 후 다시 시도해주세요.');
+        toast(submissionError(error));
       });
     });
   }
 
   /* ── 방명록 ─────────────────────────────────────────────────────────── */
-  var gbItems = [], gbShown = 0;
+  var gbItems = [], gbShown = 0, gbCursor = null, gbLoading = false;
   var gbPage = (C.guestbook && C.guestbook.pageSize) || 5;
   function renderGuestbook() {
     var list = $('[data-gb-list]');
@@ -841,17 +882,22 @@
       }).join('');
     }
     var more = $('[data-action="gb-more"]');
-    if (more) more.hidden = gbShown >= gbItems.length;
+    if (more) more.hidden = !gbCursor && gbShown >= gbItems.length;
   }
-  function loadGuestbook() {
-    if (!$('[data-gb-list]') || !C.googleScriptUrl) return;
-    api('GET', { type: 'guestbook' }).then(function (res) {
-      gbItems = res.items || [];
-      gbShown = Math.min(gbPage, gbItems.length);
+  function loadGuestbook(append) {
+    if (!$('[data-gb-list]') || !C.googleScriptUrl || gbLoading) return;
+    gbLoading = true;
+    var more = $('[data-action="gb-more"]'); if (more) more.disabled = true;
+    api('GET', { type: 'guestbook', before: append ? gbCursor : null }).then(function (res) {
+      gbItems = append ? gbItems.concat(res.items || []) : (res.items || []);
+      gbCursor = res.nextCursor || null;
+      // 이전 버전 서버의 전체 응답도 더보기로 읽을 수 있습니다.
+      gbShown = res.nextCursor !== undefined ? gbItems.length : Math.min(append ? gbShown + gbPage : gbPage, gbItems.length);
       renderGuestbook();
     }).catch(function () {
-      $('[data-gb-list]').innerHTML = '<p class="gb__empty">방명록을 불러오지 못했어요.</p>';
-    });
+      if (append) toast('메시지를 더 불러오지 못했어요. 다시 시도해주세요.');
+      else $('[data-gb-list]').innerHTML = '<p class="gb__empty">방명록을 불러오지 못했어요.</p>';
+    }).finally(function () { gbLoading = false; if (more) more.disabled = false; });
   }
   function openGuestbookWrite() {
     var m = openModal(
@@ -859,29 +905,34 @@
       '<label class="field"><span>이름</span><input name="name" required maxlength="20" placeholder="이름을 입력해주세요"></label>' +
       '<label class="field"><span>축하 메시지</span><textarea name="message" rows="5" required maxlength="500" placeholder="두 사람에게 축하의 마음을 전해주세요"></textarea><small class="field__count"><b>0</b> / 500</small></label>' +
       '<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
+      '<p class="hint">이름과 메시지가 청첩장에 공개됩니다. 연락처 등 비공개 정보는 적지 마세요. 삭제는 청첩장 주최자에게 요청해주세요.</p>' +
       '<button type="submit" class="btn btn--primary">남기기</button></form>',
       { title: '축하 메시지 남기기' });
     var form = $('form', m);
+    var requestId = submissionId();
     var cnt = $('.field__count b', m);
-    on(form.message, 'input', function () { cnt.textContent = form.message.value.length; });
+    on(field(form, 'message'), 'input', function () { cnt.textContent = field(form, 'message').value.length; });
     on(form, 'submit', function (e) {
       e.preventDefault();
-      if (form.website.value) return;
-      var name = form.name.value.trim(), message = form.message.value.trim();
+      if (field(form, 'website').value) return;
+      var name = field(form, 'name').value.trim(), message = field(form, 'message').value.trim();
       if (!name) { toast('이름을 입력해주세요'); return; }
       if (!message) { toast('메시지를 입력해주세요'); return; }
       if (!C.googleScriptUrl) { notReady(); return; }
       var btn = $('button[type=submit]', form);
       btn.disabled = true; btn.textContent = '남기는 중…';
-      api('POST', { type: 'guestbook', name: name, message: message }).then(function () {
-        gbItems.unshift({ name: name, message: message, createdAt: new Date().toISOString() });
-        gbShown = Math.min(Math.max(gbShown + 1, gbPage), gbItems.length);
-        renderGuestbook();
+      api('POST', { type: 'guestbook', name: name, message: message, requestId: requestId, website: field(form, 'website').value }).then(function (res) {
+        if (res.duplicate) loadGuestbook();
+        else {
+          gbItems.unshift({ name: name, message: message, createdAt: new Date().toISOString() });
+          gbShown = Math.min(Math.max(gbShown + 1, gbPage), gbItems.length);
+          renderGuestbook();
+        }
         closeModal();
         toast('축하 메시지가 등록되었어요 💐');
-      }).catch(function () {
+      }).catch(function (error) {
         btn.disabled = false; btn.textContent = '남기기';
-        toast('등록에 실패했어요. 잠시 후 다시 시도해주세요.');
+        toast(submissionError(error));
       });
     });
   }
@@ -918,7 +969,7 @@
       }
       case 'rsvp': openRsvp(); break;
       case 'gb-write': openGuestbookWrite(); break;
-      case 'gb-more': gbShown = Math.min(gbShown + gbPage, gbItems.length); renderGuestbook(); break;
+      case 'gb-more': if (gbCursor) loadGuestbook(true); else { gbShown = Math.min(gbShown + gbPage, gbItems.length); renderGuestbook(); } break;
       case 'share': openShare(); break;
       case 'share-kakao': shareKakao(); break;
       case 'share-link': copy(pageUrl, '청첩장 링크가 복사되었어요'); break;

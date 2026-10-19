@@ -1,0 +1,11 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>업로드 전 사진 준비</title><link rel="stylesheet" href="assets/tools.css"></head>
+<body><main><a href="setup.html">← 기본 설정 만들기</a><h1>업로드 전에 사진을 정리하세요</h1>
+<p>사진을 긴 변 1600px의 JPG 사본으로 만들고 촬영 위치·기기 정보를 제거합니다. 사진은 브라우저 안에서만 처리하며 서버에 전송하지 않습니다. 원본 파일은 바꾸지 않습니다.</p>
+<p class="notice">GitHub에는 여기서 내려받은 사본만 올리세요. 원본을 이미 올렸다면 파일을 지워도 Git 기록에는 남을 수 있습니다. 얼굴·배경처럼 사진에 보이는 정보까지 지우는 기능은 아닙니다.</p>
+<section class="card"><label>사진 용도<select id="photo-role"><option value="cover">표지 — 1장</option><option value="gallery">갤러리 — 여러 장</option><option value="og">공유 미리보기 — 1장</option><option value="closing">마무리 — 1장</option></select></label>
+<label>사진 선택<input id="photos" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp,.heic,.heif" multiple></label>
+<p class="hint">JPG·PNG·WebP를 지원해요. HEIC/HEIF는 사진 앱에서 JPG로 <strong>내보낸 뒤</strong> 선택하세요. 파일 이름의 확장자만 바꾸면 변환되지 않습니다. 한 번에 최대 50장, 각 파일 40MB까지 가능해요. 갤러리는 파일 이름 순서로 정리됩니다.</p>
+<button id="prepare" type="button">사진 정리하기</button><p id="photo-status" role="status"></p><p id="photo-error" class="error" role="alert"></p>
+<ul id="results"></ul><a id="zip-download" class="button" hidden>정리한 사진 ZIP 내려받기</a></section>
+<section class="card"><h2>다운로드한 다음</h2><p>ZIP 파일의 압축을 풀고 안의 <strong>images 폴더 내용</strong>을 내 저장소에 올리세요. 표지는 images/cover.jpg, 갤러리는 images/gallery/01.jpg … 에 넣습니다. ZIP 자체를 올리면 사진이 표시되지 않습니다.</p><p>공유 미리보기는 가로 1200×630 사진을 권합니다. 이 도구는 사진을 자르지 않으므로 구도는 먼저 조정해주세요.</p></section>
+<script src="assets/photo-tools.js"></script><script src="assets/prepare.js"></script></main></body></html>
