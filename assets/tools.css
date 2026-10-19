@@ -1,0 +1,29 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; color: #292622; background: #f7f3ee; line-height: 1.65; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px; }
+main { max-width: 900px; margin: auto; }
+h1 { font-size: clamp(1.7rem, 5vw, 2.4rem); line-height: 1.25; }
+h2 { font-size: 1.2rem; }
+a { color: #6b492c; }
+.card, fieldset { background: #fff; border: 1px solid #ddd4c9; border-radius: 16px; padding: 24px; margin: 20px 0; min-width: 0; }
+legend { font-weight: bold; padding: 0 8px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+label { display: block; font-weight: 600; }
+label small, .hint { color: #62594e; font-size: .9rem; font-weight: normal; }
+input:not([type=checkbox]), select, textarea { display: block; width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #bcb2a5; border-radius: 8px; font: inherit; background: white; color: inherit; }
+input[type=checkbox] { width: 20px; height: 20px; vertical-align: middle; }
+textarea { min-height: 120px; }
+button, .button { display: inline-block; border: 1px solid #6b492c; border-radius: 9px; padding: 12px 18px; background: #6b492c; color: #fff; font: inherit; text-decoration: none; cursor: pointer; margin: 4px 8px 4px 0; }
+button:disabled { opacity: .5; cursor: wait; }
+:focus-visible { outline: 3px solid #237b72; outline-offset: 4px; }
+.notice { border-left: 4px solid #a86c31; padding-left: 16px; }
+#error, .error { color: #9b2626; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.preview { border-top: 4px solid #b89572; text-align: center; }
+.preview h2 { font-size: 1.8rem; }
+#results li { margin: 10px 0; overflow-wrap: anywhere; }
+#results img { width: 64px; height: 64px; object-fit: cover; vertical-align: middle; margin-right: 12px; }
+[hidden] { display: none !important; }
+@media (max-width: 600px) { body { padding: 16px; } .grid { grid-template-columns: 1fr; } .card, fieldset { padding: 18px; } }
+
+#error, #photo-error, #preview-message { white-space: pre-line; }

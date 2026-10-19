@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>청첩장 기본 설정 만들기</title><link rel="stylesheet" href="assets/tools.css"></head>
+<body><main>
+<a href="https://github.com/HyunIm/wedding-invitation">사용 방법</a>
+<h1>우리 청첩장, 한 단계씩</h1>
+<p>필수 정보를 적으면 기본 설정 파일을 만들어 드려요. 부모님·연락처·계좌 등 세부 내용은 내려받은 파일을 AI와 함께 수정할 수 있어요.</p>
+<p class="notice">입력한 내용은 이 화면에서 처리하며 서버로 전송하거나 저장하지 않습니다. 내려받은 설정과 사진을 GitHub에 올리면 누구나 볼 수 있습니다. 이름·장소·사진은 공개할 내용만 사용하세요.</p>
+<form id="setup-form">
+<fieldset><legend>1. 두 분과 예식 정보</legend><div class="grid">
+<label>신랑 이름<input name="groom" required autocomplete="off"></label><label>신부 이름<input name="bride" required autocomplete="off"></label>
+<label>예식 날짜<input name="date" type="date" required></label><label>예식 시간 (한국시간)<input name="time" type="time" required></label>
+<label>예식장 이름<input name="venue" required></label><label>층·홀 <small>(선택)</small><input name="hall"></label>
+</div><label>예식장 도로명 주소<input name="address" required></label><p class="hint">지도 좌표는 몰라도 괜찮아요. 입력한 주소로 장소를 검색합니다.</p></fieldset>
+<fieldset><legend>2. 분위기와 인사말</legend><div class="grid">
+<label>색상<select name="theme"><option value="ivory">아이보리</option><option value="blush">로즈핑크</option><option value="sage">세이지그린</option><option value="navy">네이비</option><option value="mono">모노톤</option><option value="lavender">라벤더</option></select></label>
+<label>글꼴<select name="font"><option value="serif">명조</option><option value="sans">고딕</option><option value="hand">손글씨</option></select></label>
+</div><label>인사말<textarea name="message" required>저희 두 사람이 함께 새로운 시작을 합니다.
+소중한 걸음을 함께해 주시면 감사하겠습니다.</textarea></label></fieldset>
+<section class="card preview" aria-label="입력 내용 미리보기"><p>INVITATION</p><h2 id="preview-names">두 분의 이름</h2><p id="preview-date">예식 날짜와 시간</p><p id="preview-venue">예식장과 주소</p><p id="preview-message"></p><p class="hint">내용 확인용 미리보기입니다. 사진·전체 디자인은 배포 후 확인해주세요.</p></section>
+<fieldset><legend>3. 사진과 공개 범위 확인</legend><p><a href="prepare.html" target="_blank" rel="noopener">사진 준비 도구 열기 ↗</a>에서 표지·갤러리 사진을 먼저 정리하세요. 사진은 별도로 업로드합니다.</p>
+<label><input type="checkbox" name="consent" required> 사진·설정이 공개 저장소에 올라가는 점을 이해했고, 공개할 내용만 입력했습니다.</label>
+<p class="hint">화면에서 숨긴 정보도 설정 파일에 남으면 공개됩니다. 사진은 위치정보를 제거한 사본만 올리세요.</p></fieldset>
+<p id="error" role="alert"></p><button type="submit">config.js 내려받기</button><button type="button" id="copy-config">전체 설정 복사</button><p id="download-status" role="status"></p>
+</form>
+<section class="card"><h2>다음 단계</h2><p>내 저장소의 <strong>config.js</strong>에 내려받은 내용 전체를 넣고 저장하세요. 처음부터 끝까지의 클릭 순서는 <a href="https://github.com/HyunIm/wedding-invitation#-만드는-순서">README</a>를 참고하세요.</p><p>내용을 고칠 때는 이미 사용 중인 config.js를 AI에 전달하세요. 이 기본 설정 화면은 기존 파일을 불러오는 편집기가 아닙니다.</p></section>
+<script src="templates/config.js"></script><script src="assets/config-utils.js"></script><script src="assets/setup.js"></script>
+</main></body></html>

@@ -1,0 +1,30 @@
+name: 청첩장 검사
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: 회귀 테스트
+        run: npm test
+      - name: AI 안내문 동기화
+        run: node scripts/ai-pack.mjs --check
+      - name: 데모 빌드
+        run: node scripts/build.mjs --demo
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: pip install -r scripts/requirements.txt
+      - name: 사진 테스트 및 최적화
+        run: |
+          python -m unittest discover -s tests -p 'test_*.py'
+          python scripts/optimize_images.py _site

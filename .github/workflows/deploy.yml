@@ -27,13 +27,25 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - name: 회귀 테스트
+        run: npm test
+      - name: AI 안내문 동기화
+        run: node scripts/ai-pack.mjs --check
 
       - name: GitHub Pages 설정 확인
         id: pages
         uses: actions/configure-pages@v6
 
       - name: config.js 검사 및 빌드
-        run: node scripts/build.mjs
+        run: |
+          if [ "$GITHUB_REPOSITORY" = "HyunIm/wedding-invitation" ]; then
+            node scripts/build.mjs --demo
+          else
+            node scripts/build.mjs
+          fi
         env:
           SITE_URL: ${{ steps.pages.outputs.base_url }}
 
@@ -43,13 +55,14 @@ jobs:
 
       - name: 사진 용량 줄이기 (원본은 저장소에 그대로)
         run: |
-          pip install --quiet pillow
+          pip install --quiet -r scripts/requirements.txt
+          python -m unittest discover -s tests -p 'test_*.py'
           python scripts/optimize_images.py _site
 
       - name: 처음 실행 안내
         if: failure() && steps.pages.outcome == 'failure'
         run: |
-          echo "::error::GitHub Pages 가 아직 켜져 있지 않아요. Settings → Pages → Source 를 'GitHub Actions' 로 바꾼 뒤, Actions 탭에서 '청첩장 배포' → Run workflow 를 눌러주세요. (저장소를 처음 만들 때 한 번 나오는 정상적인 오류예요)"
+          echo "::error::GitHub Pages 가 아직 켜져 있지 않아요. Settings → Pages → Source 를 'GitHub Actions' 로 바꾼 뒤, Actions 탭에서 '청첩장 배포' → Run workflow 를 눌러주세요."
 
       - uses: actions/upload-pages-artifact@v5
         with:
